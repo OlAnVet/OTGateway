@@ -234,23 +234,50 @@ void setup() {
   lcd.backlight();
   lcd.setCursor(0, 0);
   lcd.print("OTGateway Start");
-
+  
+  // Настраиваем пин кнопки BOOT (GPIO 0) на вход с подтяжкой к питанию
+  pinMode(0, INPUT_PULLUP); 
+  lastActivityTime = millis(); // Запускаем отсчет 30 секунд с момента старта платы
 }
 unsigned long lastDisplayUpdate = 0;
+unsigned long lastActivityTime = 0;       // Время последнего включения подсветки
+const unsigned long backlightTimeout = 30000; // Тайм-аут подсветки (30 секунд)
+bool isBacklightOn = true;                
+int lastButtonState = HIGH;
+
 void updateLcd() {
-    if (millis() - lastDisplayUpdate < 5000) return;
-    lastDisplayUpdate = millis();
+    // 1. Проверяем нажатие кнопки BOOT (GPIO 0 замыкается на GND, поэтому состояние LOW)
+    int currentButtonState = digitalRead(0);
 
-    float tIndoor = Sensors::getMeanValueByPurpose(Sensors::Purpose::INDOOR_TEMP, Sensors::ValueType::PRIMARY);
-    float tOutdoor = Sensors::getMeanValueByPurpose(Sensors::Purpose::OUTDOOR_TEMP, Sensors::ValueType::PRIMARY);
-
-    lcd.setCursor(0, 0);
-    if (isnan(tIndoor) || tIndoor < -50.0) lcd.print("Indoor:  ERR    ");
-    else lcd.printf("Indoor:  %.1f C  ", tIndoor);
-
-    lcd.setCursor(0, 1);
-    if (isnan(tOutdoor) || tOutdoor < -50.0) lcd.print("Outdoor: ERR    ");
-    else lcd.printf("Outdoor: %.1f C  ", tOutdoor);
+    if (lastButtonState == HIGH && currentButtonState == LOW) {
+        lastActivityTime = millis(); // Сбрасываем таймер активности
+        if (!isBacklightOn) {
+            lcd.backlight();         // Включаем подсветку, если она была выключена
+            isBacklightOn = true;
+        }
+    }
+    lastButtonState = currentButtonState;
+  
+    // 2. Проверяем, не пора ли выключить подсветку
+    if (isBacklightOn && (millis() - lastActivityTime >= backlightTimeout)) {
+        lcd.noBacklight();           // Гасим подсветку
+        isBacklightOn = false;
+    }
+    if (millis() - lastDisplayUpdate >= 5000) {
+        lastDisplayUpdate = millis();
+        if (isBacklightOn) {
+            float tIndoor = Sensors::getMeanValueByPurpose(Sensors::Purpose::INDOOR_TEMP, Sensors::ValueType::PRIMARY);
+            float tOutdoor = Sensors::getMeanValueByPurpose(Sensors::Purpose::OUTDOOR_TEMP, Sensors::ValueType::PRIMARY);
+        
+            lcd.setCursor(0, 0);
+            if (isnan(tIndoor) || tIndoor < -50.0) lcd.print("Indoor:  ERR    ");
+            else lcd.printf("Indoor:  %.1f C  ", tIndoor);
+        
+            lcd.setCursor(0, 1);
+            if (isnan(tOutdoor) || tOutdoor < -50.0) lcd.print("Outdoor: ERR    ");
+            else lcd.printf("Outdoor: %.1f C  ", tOutdoor);
+        }
+    }
 }
 
 void loop() {
