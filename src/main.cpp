@@ -10,7 +10,11 @@
 #include <LiquidCrystal_I2C.h>
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); 
-
+unsigned long lastDisplayUpdate = 0;
+unsigned long lastActivityTime = 0;       // Время последнего включения подсветки
+const unsigned long backlightTimeout = 30000; // Тайм-аут подсветки (30 секунд)
+bool isBacklightOn = true;                
+int lastButtonState = HIGH;
 
 #include "defines.h"
 #include "strings.h"
@@ -239,11 +243,7 @@ void setup() {
   pinMode(0, INPUT_PULLUP); 
   lastActivityTime = millis(); // Запускаем отсчет 30 секунд с момента старта платы
 }
-unsigned long lastDisplayUpdate = 0;
-unsigned long lastActivityTime = 0;       // Время последнего включения подсветки
-const unsigned long backlightTimeout = 30000; // Тайм-аут подсветки (30 секунд)
-bool isBacklightOn = true;                
-int lastButtonState = HIGH;
+
 
 void updateLcd() {
     // 1. Проверяем нажатие кнопки BOOT (GPIO 0 замыкается на GND, поэтому состояние LOW)
