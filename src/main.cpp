@@ -6,6 +6,11 @@
 #include <FileData.h>
 #include <LittleFS.h>
 #include <ESPTelnetStream.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2); 
+
 
 #include "defines.h"
 #include "strings.h"
@@ -223,10 +228,34 @@ void setup() {
   Scheduler.start(tMain);
 
   Scheduler.begin();
+
+  Wire.begin(); // Для ESP32 стандартные GPIO21=SDA, GPIO22=SCL
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("OTGateway Start");
+
+}
+unsigned long lastDisplayUpdate = 0;
+void updateLcd() {
+    if (millis() - lastDisplayUpdate < 5000) return;
+    lastDisplayUpdate = millis();
+
+    float tIndoor = Sensors::getMeanValueByPurpose(Sensors::Purpose::INDOOR_TEMP, Sensors::ValueType::PRIMARY);
+    float tOutdoor = Sensors::getMeanValueByPurpose(Sensors::Purpose::OUTDOOR_TEMP, Sensors::ValueType::PRIMARY);
+
+    lcd.setCursor(0, 0);
+    if (isnan(tIndoor) || tIndoor < -50.0) lcd.print("Indoor:  ERR    ");
+    else lcd.printf("Indoor:  %.1f C  ", tIndoor);
+
+    lcd.setCursor(0, 1);
+    if (isnan(tOutdoor) || tOutdoor < -50.0) lcd.print("Outdoor: ERR    ");
+    else lcd.printf("Outdoor: %.1f C  ", tOutdoor);
 }
 
 void loop() {
 #if defined(ARDUINO_ARCH_ESP32)
   vTaskDelete(NULL);
 #endif
+updateLcd();  
 }
