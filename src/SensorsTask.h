@@ -1,6 +1,14 @@
 #include <unordered_map>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <LiquidCrystal_I2C.h>
+extern LiquidCrystal_I2C lcd;
+extern unsigned long lastDisplayUpdate;
+extern unsigned long lastActivityTime;
+extern const unsigned long backlightTimeout;
+extern bool isBacklightOn;
+extern int lastButtonState;
+extern bool firstRun;
 
 #if USE_BLE
   #include <NimBLEDevice.h>
@@ -153,6 +161,53 @@ protected:
 
     vars.master.dhw.currentTemp = Sensors::getMeanValueByPurpose(Sensors::Purpose::DHW_TEMP, Sensors::ValueType::PRIMARY);
     vars.master.dhw.returnTemp = Sensors::getMeanValueByPurpose(Sensors::Purpose::DHW_RETURN_TEMP, Sensors::ValueType::PRIMARY);
+  
+    // --- НАЧАЛО БЛОКА LCD1602 И КНОПКИ BOOT ---
+    
+    int currentButtonState = digitalRead(0);
+
+    // 1. Проверяем нажатие кнопки BOOT (GPIO 0)
+    if (lastButtonState == HIGH && currentButtonState == LOW) {
+        lastActivityTime = millis(); // Сбрасываем таймаут
+        if (!isBacklightOn) {
+            lcd.backlight();         // Включаем подсветку
+            isBacklightOn = true;
+            firstRun = true;         // Принудительно перерисовываем экран
+        }
+    }
+    lastButtonState = currentButtonState;
+
+    // 2. Таймер автоматического отключения подсветки
+    if (isBacklightOn && (millis() - lastActivityTime >= backlightTimeout)) {
+        lcd.noBacklight();           // Выключаем подсветку
+        isBacklightOn = false;
+    }
+
+    // 3. Вывод данных на экран (если подсветка включена или это первый запуск)
+    if (isBacklightOn || firstRun) {
+        firstRun = false;
+
+        float tIndoor = vars.master.heating.indoorTemp;
+        float tOutdoor = vars.master.heating.outdoorTemp;
+
+        // Строка 1: Indoor
+        lcd.setCursor(0, 0);
+        if (isnan(tIndoor) || tIndoor < -50.0) {
+            lcd.print("Indoor:  NO DET ");
+        } else {
+            lcd.printf("Indoor:  %.1f C  ", tIndoor);
+        }
+
+        // Строка 2: Outdoor
+        lcd.setCursor(0, 1);
+        if (isnan(tOutdoor) || tOutdoor < -50.0) {
+            lcd.print("Outdoor: NO DET ");
+        } else {
+            lcd.printf("Outdoor: %.1f C  ", tOutdoor);
+        }
+    }
+    
+    // --- КОНЕЦ БЛОКА LCD1602 ---  
   }
 
   void makeDallasInstances() {
