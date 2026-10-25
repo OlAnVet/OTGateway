@@ -91,8 +91,17 @@ void setup() {
   #endif
   Log.addStream(&Serial);
   Log.print("\n\n\r");
+   
+  Wire.begin(); // Для ESP32 стандартные GPIO21=SDA, GPIO22=SCL
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("OTGateway Start");
+  
+  // Настраиваем пин кнопки BOOT (GPIO 0) на вход с подтяжкой к питанию
+  pinMode(0, INPUT_PULLUP); 
+  lastActivityTime = millis(); // Запускаем отсчет 30 секунд с момента старта платы
 
-  //
   // Network settings
   switch (fsNetworkSettings.read()) {
     case FD_FS_ERR:
@@ -211,16 +220,7 @@ void setup() {
     default:
       break;
   }
-  
-  Wire.begin(); // Для ESP32 стандартные GPIO21=SDA, GPIO22=SCL
-  lcd.init();
-  lcd.backlight();
-  lcd.setCursor(0, 0);
-  lcd.print("OTGateway Start");
-  
-  // Настраиваем пин кнопки BOOT (GPIO 0) на вход с подтяжкой к питанию
-  pinMode(0, INPUT_PULLUP); 
-  lastActivityTime = millis(); // Запускаем отсчет 30 секунд с момента старта платы
+ 
   //
   // Make tasks
   tMqtt = new MqttTask(false, 500);
