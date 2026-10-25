@@ -15,6 +15,7 @@ unsigned long lastActivityTime = 0;       // Время последнего в�
 const unsigned long backlightTimeout = 30000; // Тайм-аут подсветки (30 секунд)
 bool isBacklightOn = true;                
 int lastButtonState = HIGH;
+bool firstRun = true; 
 
 #include "defines.h"
 #include "strings.h"
@@ -243,46 +244,10 @@ void setup() {
   pinMode(0, INPUT_PULLUP); 
   lastActivityTime = millis(); // Запускаем отсчет 30 секунд с момента старта платы
 }
-
-
-void updateLcd() {
-    // 1. Проверяем нажатие кнопки BOOT (GPIO 0 замыкается на GND, поэтому состояние LOW)
-    int currentButtonState = digitalRead(0);
-
-    if (lastButtonState == HIGH && currentButtonState == LOW) {
-        lastActivityTime = millis(); // Сбрасываем таймер активности
-        if (!isBacklightOn) {
-            lcd.backlight();         // Включаем подсветку, если она была выключена
-            isBacklightOn = true;
-        }
-    }
-    lastButtonState = currentButtonState;
-  
-    // 2. Проверяем, не пора ли выключить подсветку
-    if (isBacklightOn && (millis() - lastActivityTime >= backlightTimeout)) {
-        lcd.noBacklight();           // Гасим подсветку
-        isBacklightOn = false;
-    }
-    if (millis() - lastDisplayUpdate >= 5000) {
-        lastDisplayUpdate = millis();
-        if (isBacklightOn) {
-            float tIndoor = Sensors::getMeanValueByPurpose(Sensors::Purpose::INDOOR_TEMP, Sensors::ValueType::PRIMARY);
-            float tOutdoor = Sensors::getMeanValueByPurpose(Sensors::Purpose::OUTDOOR_TEMP, Sensors::ValueType::PRIMARY);
-        
-            lcd.setCursor(0, 0);
-            if (isnan(tIndoor) || tIndoor < -50.0) lcd.print("Indoor:  ERR    ");
-            else lcd.printf("Indoor:  %.1f C  ", tIndoor);
-        
-            lcd.setCursor(0, 1);
-            if (isnan(tOutdoor) || tOutdoor < -50.0) lcd.print("Outdoor: ERR    ");
-            else lcd.printf("Outdoor: %.1f C  ", tOutdoor);
-        }
-    }
-}
-
+ 
 void loop() {
 #if defined(ARDUINO_ARCH_ESP32)
   vTaskDelete(NULL);
 #endif
-updateLcd();  
+ 
 }
