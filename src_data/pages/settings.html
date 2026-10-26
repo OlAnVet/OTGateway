@@ -827,6 +827,54 @@
         <hr />
 
         <details>
+          <summary><b data-i18n>settings.section.extPump</b></summary>
+          <div>
+            <div id="extpump-settings-busy" aria-busy="true"></div>
+            <form action="/api/settings" id="extpump-settings" class="hidden">
+              <fieldset>
+                <label>
+                  <input type="checkbox" name="externalPump[use]" value="true">
+                  <span data-i18n>settings.extPump.use</span>
+                </label>
+
+                <label>
+                  <input type="checkbox" name="externalPump[invertState]" value="true">
+                  <span data-i18n>settings.externalPump.invertState</span>
+                </label>
+              </fieldset>
+
+              <div class="grid">
+                <label>
+                  <span data-i18n>settings.extPump.gpio</span>
+                  <input type="number" inputmode="numeric" name="externalPump[gpio]" min="0" max="254" step="1">
+                </label>
+
+                <label>
+                  <span data-i18n>settings.extPump.postCirculationTime</span>
+                  <input type="number" inputmode="numeric" name="externalPump[postCirculationTime]" min="1" max="120" step="1" required>
+                </label>
+              </div>
+
+              <div class="grid">
+                <label>
+                  <span data-i18n>settings.extPump.antiStuckInterval</span>
+                  <input type="number" inputmode="numeric" name="externalPump[antiStuckInterval]" min="1" max="366" step="1" required>
+                </label>
+
+                <label>
+                  <span data-i18n>settings.extPump.antiStuckTime</span>
+                  <input type="number" inputmode="numeric" name="externalPump[antiStuckTime]" min="1" max="20" step="1" required>
+                </label>
+              </div>
+
+              <button type="submit" data-i18n>button.save</button>
+            </form>
+          </div>
+        </details>
+
+        <hr />
+
+        <details>
           <summary><b data-i18n>settings.section.cascadeControl</b></summary>
           <div>
             <div id="cc-settings-busy" aria-busy="true"></div>
